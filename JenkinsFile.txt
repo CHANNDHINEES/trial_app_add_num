@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+    
+    environment {
+        // Set up Snyk environment variable
+        SNYK_TOKEN = credentials('snyk-token')
+    }
+    
+    stages {
+        stage('Checkout') {
+    steps {
+        git branch: 'main', // or 'master', whichever your repo uses
+            url: 'https://github.com/CHANNDHINEES/trial_app_add_num.git'
+    }
+}
+        
+
+        
+        stage('Restore packages') {
+            steps {
+                bat 'dotnet restore NumberAdditionSolution.sln'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                bat 'dotnet build NumberAdditionSolution.sln --configuration Release'
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                bat 'dotnet test NumberAdditionWeb.Tests/NumberAdditionWeb.Tests.csproj'
+            }
+        }
+        
+        stage('Snyk Security Scan') {
+            steps {
+                // Install Snyk CLI (if not already installed)
+                bat 'npm install -g snyk'
+                
+                // Run Snyk test
+                bat 'snyk test --all-projects'
+            }
+        }
+        
+        stage('Publish') {
+            steps {
+                bat 'dotnet publish NumberAdditionWeb/NumberAdditionWeb.csproj -c Release -o ./publish'
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                // Replace this with your actual deployment steps
+                echo 'Deploying the application...'
+                // Example: sh 'rsync -avz ./publish/ user@your-server:/path/to/deploy/'
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'CI/CD pipeline completed successfully!'
+        }
+        failure {
+            echo 'CI/CD pipeline failed. Please check the logs for details.'
+        }
+    }
+}
